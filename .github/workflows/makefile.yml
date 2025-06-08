@@ -7,16 +7,13 @@ on:
         description: 'Colocar accion del make'
         required: true
         default: 'plan'
-
-permissions:
-      id-token: write
-      contents: read  
-
+        
 jobs:
   terraform:
     name: 'Terraform'
     runs-on: ubuntu-latest
-    environment: aws
+    #environment: aws
+    environment: prod_aws
 
     steps:
     - name: Checkout
