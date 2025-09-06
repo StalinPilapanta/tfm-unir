@@ -9,9 +9,8 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1                 # <-- ajusta tu región
-  ECR_REPOSITORY: dev-ecr          # <-- repo ECR para el front
-  IMAGE_TAG: ${{ github.sha }}
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: dev-ecr
 
 jobs:
   build-and-push-front:
