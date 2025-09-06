@@ -43,7 +43,7 @@ jobs:
           file: ./back/Dockerfile
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:back
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:front
           provenance: false         # <- evita subir attestation de provenance
           sbom: false               # <- evita subir el SBOM como artefacto
           cache-from: type=gha
