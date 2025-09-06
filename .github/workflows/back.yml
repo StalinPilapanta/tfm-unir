@@ -1,20 +1,20 @@
-name: FRONT BUILD ECR
+name: BACK BUILD ECR
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - "front/**"
-      - ".github/workflows/build-and-push-front.yml"
+      - "back/**"
+      - ".github/workflows/build-and-push-back.yml"
   workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1                 # <-- ajusta tu región
-  ECR_REPOSITORY: dev-ecr          # <-- repo ECR para el front
+  ECR_REPOSITORY: dev-ecr          # <-- repo ECR para el back
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-  build-and-push-front:
+  build-and-push-back:
     runs-on: ubuntu-latest
     environment: prod_aws
 
@@ -36,11 +36,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build & Push (front/)
+      - name: Build & Push (back/)
         uses: docker/build-push-action@v6
         with:
-          context: ./front
-          file: ./front/Dockerfile
+          context: ./back
+          file: ./back/Dockerfile
           push: true
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
