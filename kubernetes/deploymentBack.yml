@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: back
+  name: deployment-back
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: back-2048
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: back-2048
+    spec:
+      containers:
+      - image: nginx:alpine
+        name: back-2048
+        resources:
+          requests:
+            memory: "64Mi"  # Reemplaza con la cantidad adecuada de memoria
+            cpu: "250m"      # Reemplaza con la cantidad adecuada de CPU
+          limits:
+            memory: "128Mi" # Reemplaza con la cantidad adecuada de memoria máxima
+            cpu: "500m"     # Reemplaza con la cantidad adecuada de CPU máxima
+        ports:
+          - containerPort: 80 
