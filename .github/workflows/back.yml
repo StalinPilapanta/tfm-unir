@@ -82,7 +82,6 @@ jobs:
         - name: Apply back manifest
           run: |
             kubectl apply -f $BACK_MANIFEST
-            kubectl rollout status deployment/back-deployment -n $NAMESPACE --timeout=300s
 
         - name: Show shared ALB hostname(s)
           run: |

@@ -82,7 +82,6 @@ jobs:
         - name: Apply front manifest
           run: |
             kubectl apply -f $FRONT_MANIFEST
-            kubectl rollout status deployment/front-deployment -n $NAMESPACE --timeout=300s
 
         - name: Show shared ALB hostname(s)
           run: |
