@@ -1,4 +1,4 @@
-name: BACK BUILD ECR
+name: BACK BUILD PUSH & DEPLOY
 
 on:
   push:
