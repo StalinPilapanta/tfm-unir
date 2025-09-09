@@ -13,6 +13,7 @@ env:
   ECR_REPOSITORY: dev-ecr
   CLUSTER_NAME: dev-eks
   NAMESPACE: front
+  BACK_MANIFEST: kubernetes/back.yml
 
 jobs:
   build-and-push-back:
