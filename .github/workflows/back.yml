@@ -80,12 +80,12 @@ jobs:
         # ⚠️ Fuerza un rollout aunque el tag sea el mismo (anotación "kick")
         - name: Bump annotation to force rollout
           run: |
-            kubectl -n $NAMESPACE annotate deployment materias-deployment ci-kick=$(date +%s) --overwrite || true
+            kubectl -n $NAMESPACE annotate deployment back-deployment ci-kick=$(date +%s) --overwrite || true
 
         - name: Apply back manifest
           run: |
             kubectl apply -f $BACK_MANIFEST
-            kubectl rollout status deployment/materias-deployment -n $NAMESPACE --timeout=300s
+            kubectl rollout status deployment/back-deployment -n $NAMESPACE --timeout=300s
 
         - name: Show shared ALB hostname(s)
           run: |
