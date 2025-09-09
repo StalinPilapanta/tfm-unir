@@ -82,10 +82,3 @@ jobs:
         - name: Apply back manifest
           run: |
             kubectl apply -f $BACK_MANIFEST
-
-        - name: Show shared ALB hostname(s)
-          run: |
-            sudo apt-get update && sudo apt-get install -y jq
-            kubectl get ingress -n $NAMESPACE -o json \
-            | jq -r '.items[] | select(.metadata.annotations["alb.ingress.kubernetes.io/group.name"]=="web") \
-              | .metadata.name + " -> " + (.status.loadBalancer.ingress[0].hostname // "pending")' | sort -u
