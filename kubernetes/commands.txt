@@ -5,12 +5,17 @@ eksctl utils associate-iam-oidc-provider \
   --cluster dev-eks \
   --approve
 
+curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.13.3/docs/install/iam_policy.json
+
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://iam_policy.json
 
 eksctl create iamserviceaccount \
     --cluster=dev-eks \
     --namespace=kube-system \
     --name=aws-load-balancer-controller \
-    --attach-policy-arn=arn:aws:iam::xxx:policy/AWSLoadBalancerControllerIAMPolicy \
+    --attach-policy-arn=arn:aws:iam::737349677596:policy/AWSLoadBalancerControllerIAMPolicy \
     --override-existing-serviceaccounts \
     --region us-east-1 \
     --approve
@@ -27,3 +32,11 @@ helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
 
 check 
 kubectl get deployment -n kube-system aws-load-balancer-controller
+
+kubectl get ingress nginx-ingress-test -n default -o jsonpath='{.metadata.finalizers}{"\n"}'
+
+kubectl patch ingress nginx-ingress -n default \
+  --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]'
+
+kubectl patch ingress nginx-ingress -n default \
+  -p '{"metadata":{"finalizers":[]}}' --type=merge
