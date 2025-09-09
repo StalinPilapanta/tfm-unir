@@ -11,6 +11,8 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: dev-ecr
+  CLUSTER_NAME: dev-eks
+  NAMESPACE: back
 
 jobs:
   build-and-push-front:
