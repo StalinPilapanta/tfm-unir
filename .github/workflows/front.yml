@@ -1,4 +1,4 @@
-name: FRONT BUILD ECR
+name: FRONT BUILD PUSH & DEPLOY
 
 on:
   push:
