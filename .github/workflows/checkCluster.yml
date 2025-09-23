@@ -2,54 +2,75 @@ name: 'Check Cluster'
 
 on:
   workflow_dispatch:
-        
+
 jobs:
   Check_Cluster:
-    name: 'Terraform'
+    name: 'check_eks'
     runs-on: ubuntu-latest
-    #environment: aws
     environment: prod_aws
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-        
-    - name: Terraform Execution
-      run: |
-        echo "********* CHECK OIDC *********"
-        eksctl utils associate-iam-oidc-provider \
-          --region us-east-1 \
-          --cluster dev-eks \
-          --approve
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          # Si tienes OIDC con un rol, es recomendable:
+          # role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          # role-session-name: gha-eks-setup
 
-        echo "********* CREATE SERVICE ACCOUNT *********"
-        eksctl create iamserviceaccount \
-          --cluster=dev-eks \
-          --namespace=kube-system \
-          --name=aws-load-balancer-controller \
-          --attach-policy-arn=arn:aws:iam::737349677596:policy/AWSLoadBalancerControllerIAMPolicy \
-          --override-existing-serviceaccounts \
-          --region us-east-1 \
-          --approve
-        
-        echo "********* HELM REPOS *********"
-        helm repo add eks https://aws.github.io/eks-charts
-        helm repo update eks
+      - name: Install eksctl
+        run: |
+          curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s | tr '[:upper:]' '[:lower:]')_amd64.tar.gz" \
+            | tar xz -C /tmp
+          sudo mv /tmp/eksctl /usr/local/bin/eksctl
+          eksctl version
 
-        echo "********* UPGRADE SERVICEACCOUNT *********"
-        helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
-          -n kube-system \
-          --set clusterName=dev-eks \
-          --set serviceAccount.create=false \
-          --set serviceAccount.name=aws-load-balancer-controller
-        
-        echo "********* CHECK INGRESS CONTROLLER *********"
-        kubectl get deployment -n kube-system aws-load-balancer-controller
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
 
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --region us-east-1 --name dev-eks
+
+      - name: Steps to check
+        run: |
+          echo "********* CHECK OIDC *********"
+          eksctl utils associate-iam-oidc-provider \
+            --region us-east-1 \
+            --cluster dev-eks \
+            --approve
+
+          echo "********* CREATE SERVICE ACCOUNT *********"
+          eksctl create iamserviceaccount \
+            --cluster=dev-eks \
+            --namespace=kube-system \
+            --name=aws-load-balancer-controller \
+            --attach-policy-arn=arn:aws:iam::737349677596:policy/AWSLoadBalancerControllerIAMPolicy \
+            --override-existing-serviceaccounts \
+            --region us-east-1 \
+            --approve
+
+          echo "********* HELM REPOS *********"
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update
+
+          echo "********* UPGRADE SERVICEACCOUNT *********"
+          helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
+            -n kube-system \
+            --set clusterName=dev-eks \
+            --set serviceAccount.create=false \
+            --set serviceAccount.name=aws-load-balancer-controller
+
+          echo "********* CHECK INGRESS CONTROLLER *********"
+          kubectl get deployment -n kube-system aws-load-balancer-controller
