@@ -7,18 +7,30 @@ on:
       - "back/**"
       - ".github/workflows/build-and-push-back.yml"
   workflow_dispatch:
+    inputs:
+      action:
+        description: Qué hacer
+        type: choice
+        required: true
+        options: [create, destroy]
+        default: create
 
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: dev-ecr
   CLUSTER_NAME: dev-eks
-  NAMESPACE: front
+  NAMESPACE: back
   BACK_MANIFEST: kubernetes/back.yml
+
+concurrency:
+  group: back-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   build-and-push-back:
     runs-on: ubuntu-latest
     environment: prod_aws
+    if: ${{ github.event_name == 'push' || inputs.action == 'create' }}
 
     steps:
       - name: Checkout
@@ -56,6 +68,8 @@ jobs:
       needs: [build-and-push-back]
       runs-on: ubuntu-latest
       environment: prod_aws
+      if: ${{ github.event_name == 'push' || inputs.action == 'create' }}
+
       steps:
         - uses: actions/checkout@v4
 
@@ -82,3 +96,36 @@ jobs:
         - name: Apply back manifest
           run: |
             kubectl apply -f $BACK_MANIFEST
+  
+  destroy_back:
+      name: Destroy Back
+      runs-on: ubuntu-latest
+      environment: prod_aws
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' }}
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Configure AWS
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region:            ${{ env.AWS_REGION }}
+
+        - name: Setup kubectl
+          uses: azure/setup-kubectl@v4
+          with:
+            version: v1.30.0
+
+        - name: Update kubeconfig
+          run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+        - name: Destroy back manifest
+          run: |
+            kubectl -n $NAMESPACE get all 
+            kubectl delete -f $BACK_MANIFEST
+        
+        - name: Validate resources
+          run: |
+            kubectl get namespaces
+            kubectl -n $NAMESPACE get all

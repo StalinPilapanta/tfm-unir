@@ -7,18 +7,30 @@ on:
       - "front/**"
       - ".github/workflows/build-and-push-front.yml"
   workflow_dispatch:
+    inputs:
+      action:
+        description: Qué hacer
+        type: choice
+        required: true
+        options: [create, destroy]
+        default: create
 
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: dev-ecr
   CLUSTER_NAME: dev-eks
-  NAMESPACE: back
+  NAMESPACE: front
   FRONT_MANIFEST: kubernetes/front.yml
+
+concurrency:
+  group: front-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   build-and-push-front:
     runs-on: ubuntu-latest
     environment: prod_aws
+    if: ${{ github.event_name == 'push' || inputs.action == 'create' }}
 
     steps:
       - name: Checkout
@@ -56,6 +68,7 @@ jobs:
       needs: [build-and-push-front]
       runs-on: ubuntu-latest
       environment: prod_aws
+      if: ${{ github.event_name == 'push' || inputs.action == 'create' }}
       steps:
         - uses: actions/checkout@v4
 
@@ -82,3 +95,36 @@ jobs:
         - name: Apply front manifest
           run: |
             kubectl apply -f $FRONT_MANIFEST
+  
+  destroy_front:
+      name: Destroy Front
+      runs-on: ubuntu-latest
+      environment: prod_aws
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' }}
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Configure AWS
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region:            ${{ env.AWS_REGION }}
+
+        - name: Setup kubectl
+          uses: azure/setup-kubectl@v4
+          with:
+            version: v1.30.0
+
+        - name: Update kubeconfig
+          run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+        - name: Destroy front manifest
+          run: |
+            kubectl -n $NAMESPACE get all
+            kubectl delete -f $FRONT_MANIFEST
+        
+        - name: Validate resources
+          run: |
+            kubectl get namespaces
+            kubectl -n $NAMESPACE get all
