@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
         
 jobs:
-  terraform:
+  Check_Cluster:
     name: 'Terraform'
     runs-on: ubuntu-latest
     #environment: aws
