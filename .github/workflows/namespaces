@@ -1,0 +1,78 @@
+name: namespaces
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - ".github/workflows/namespaces.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Qué hacer
+        type: choice
+        required: true
+        options: [create, destroy]
+        default: create
+env: 
+  NS_MANIFEST: kubernetes/namespaces.yml
+
+concurrency:
+  group: back-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  create_namespace:
+      name: namespaces
+      runs-on: ubuntu-latest
+      environment: prod_aws
+      if: ${{ github.event_name == 'push' || inputs.action == 'create' }}
+
+      steps:
+        - uses: actions/checkout@v4
+        - name: Configure AWS
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region:            ${{ env.AWS_REGION }}
+        - name: Setup kubectl
+          uses: azure/setup-kubectl@v4
+          with:
+            version: v1.30.0
+        - name: Update kubeconfig
+          run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+        - name: Apply back manifest
+          run: kubectl apply -f $NS_MANIFEST
+        - name: Validate resources
+          run: kubectl get namespaces
+            
+  destroy_namespace:
+      name: Destroy Back
+      runs-on: ubuntu-latest
+      environment: prod_aws
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' }}
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Configure AWS
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region:            ${{ env.AWS_REGION }}
+
+        - name: Setup kubectl
+          uses: azure/setup-kubectl@v4
+          with:
+            version: v1.30.0
+
+        - name: Update kubeconfig
+          run: aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+        - name: Destroy back manifest
+          run: |
+            kubectl delete -f $NS_MANIFEST
+        
+        - name: Validate resources
+          run: |
+            kubectl get namespaces
