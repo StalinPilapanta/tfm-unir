@@ -14,6 +14,8 @@ on:
         options: [create, destroy]
         default: create
 env: 
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: dev-eks
   NS_MANIFEST: kubernetes/namespaces.yml
 
 concurrency:
