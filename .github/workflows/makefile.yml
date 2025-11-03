@@ -1,4 +1,4 @@
-name: 'Deploy Infra Terraform on AWS'
+name: '1.- Deploy Infra Terraform on AWS'
 
 on:
   workflow_dispatch:

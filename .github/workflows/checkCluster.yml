@@ -1,4 +1,4 @@
-name: 'Check Cluster'
+name: '2.- Check Cluster'
 
 on:
   workflow_dispatch:
